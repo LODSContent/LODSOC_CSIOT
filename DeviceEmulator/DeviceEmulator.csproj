@@ -350,6 +350,9 @@
     <Content Include="Content\bootstrap-theme.min.css" />
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
+    <Content Include="Deploy\DeviceEmulator.deploy-readme.txt" />
+    <Content Include="Deploy\DeviceEmulator.SetParameters.xml" />
+    <Content Include="Deploy\DeviceEmulator.SourceManifest.xml" />
     <Content Include="favicon.ico" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
@@ -359,6 +362,8 @@
     <Content Include="ApplicationInsights.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Deploy\DeviceEmulator.deploy.cmd" />
+    <Content Include="Deploy\DeviceEmulator.zip" />
     <None Include="Properties\PublishProfiles\CustomProfile.pubxml" />
     <None Include="Scripts\jquery-3.3.1.intellisense.js" />
     <Content Include="Scripts\jquery-3.3.1.js" />
