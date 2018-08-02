@@ -1,0 +1,113 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "LabInstanceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Name for the container group"
+      }
+    },
+
+    "image": {
+      "type": "string",
+      "metadata": {
+        "description": "Container image to deploy. Should be of the form accountName/imagename[:tag] for images stored in Docker Hub or a fully qualified URI for a private registry like the Azure Container Registry."
+      },
+      "defaultValue": "centos:latest"
+    },
+    "cpuCores": {
+      "type": "string",
+      "metadata": {
+        "description": "The number of CPU cores to allocate to the container."
+      },
+      "defaultValue": "1.0"
+    },
+    "memoryInGb": {
+      "type": "string",
+      "metadata": {
+        "description": "The amount of memory to allocate to the container in gigabytes."
+      },
+      "defaultValue": "1.5"
+    }
+  },
+  "variables": {
+    "containerGroupName": "[concat('cg',parameters('LabInstanceId'))]",
+    "containerName": "simulator",
+    "primaryPort": "80"
+    
+  },
+  "resources": [
+    {
+      "name": "[variables('containergroupname')]",
+      "type": "Microsoft.ContainerInstance/containerGroups",
+      "apiVersion": "2017-10-01-preview",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "containers": [
+          {
+            "name": "[variables('containerName')]",
+            "properties": {
+              "command": [  ],
+              "image": "[parameters('image')]",
+              "ports": [
+                {
+                  "port": "[variables('primaryPort')]"
+                }
+              ],
+              "resources": {
+                "requests": {
+                  "cpu": "[parameters('cpuCores')]",
+                  "memoryInGB": "[parameters('memoryInGb')]"
+                }
+              }
+            }
+          }
+          //{
+          //  "name": "[parameters('containername2')]",
+          //  "properties": {
+          //    "command": [
+          //      "bin/bash",
+          //      "-c",
+          //      "while sleep 5; do cat /mnt/input/access.log; done"
+          //    ],
+          //    "image": "[parameters('image')]",
+          //    "resources": {
+          //      "requests": {
+          //        "cpu": "[parameters('cpuCores')]",
+          //        "memoryInGb": "[parameters('memoryInGb')]"
+          //      }
+          //    },
+          //    "volumeMounts": [
+          //      {
+          //        "name": "[parameters('volumename')]",
+          //        "mountPath": "/mnt/input",
+          //        "readOnly": true
+          //      }
+          //    ]
+          //  }
+          //}
+        ],
+        "osType": "Linux",
+        "ipAddress": {
+          "type": "Public",
+          "ports": [
+            {
+              "protocol": "tcp",
+              "port": "[variables('primaryPort')]"
+            }
+          ]
+        },
+        "volumes": [
+
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "containerIPv4Address": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/', variables('containerGroupName'))).ipAddress.ip]"
+    }
+  }
+}
