@@ -52,7 +52,7 @@
       "name": "[variables('iotHubName')]",
       "apiVersion": "2018-04-01",
       "location": "[resourceGroup().location]",
-      "condition": "[variables('deployIoTHub')]"
+      "condition": "[variables('deployIoTHub')]",
       "tags": {
         "displayName": "IoT Hub"
       },
