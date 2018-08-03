@@ -5,13 +5,23 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using iotWebApp.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace iotWebApp.Controllers
 {
     public class HomeController : Controller
     {
+        private readonly IConfiguration Config;
+
+        public HomeController(IConfiguration config)
+        {
+            Config = config;
+        }
+
         public IActionResult Index()
         {
+            ViewBag.Sample =Config["Sample"];
+            ViewBag.Storage = Config["ConnectionStrings:Storage"];
             return View();
         }
 
