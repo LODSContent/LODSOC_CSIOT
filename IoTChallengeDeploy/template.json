@@ -33,7 +33,10 @@
     "webappName": "[concat('lods', parameters('LabInstanceId'))]",
     "aspName": "iotChallenge-ASP",
     "aspSku": "S1",
-    "storageAccountId": "[concat(resourceGroup().id,'/providers/Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+    "storageAccountId": "[concat(resourceGroup().id,'/providers/Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+    "advanced": "[bool(or(or(equals(parameters('testType'),'3'),equals(parameters('testType'),'12')), or(equals(parameters('testType'),'48'),equals(parameters('testType'),'63'))))]",
+    "deployIoTHub": "[bool(greater(parameters('testType'),3))]",
+    "deployCosmosDB": "[bool(or(equals(parameters('testType'),16),greater(parameters('testType'),32)))]"
 
   },
   "resources": [
@@ -49,6 +52,7 @@
       "name": "[variables('iotHubName')]",
       "apiVersion": "2018-04-01",
       "location": "[resourceGroup().location]",
+      "condition": "[variables('deployIoTHub')]"
       "tags": {
         "displayName": "IoT Hub"
       },
@@ -146,6 +150,7 @@
       "name": "[variables('cosmosDbName')]",
       "apiVersion": "2015-04-08",
       "location": "[resourceGroup().location]",
+      "condition": "[variables('deployCosmosDB')]",
       "tags": {
         "defaultExperience": "DocumentDB",
         "displayName": "Document DB"
@@ -236,7 +241,10 @@
       },
       "properties": {
         "name": "[variables('webappName')]",
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('aspName'))]"
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('aspName'))]",
+        "siteConfig": {
+          "AlwaysOn": true
+        }
       },
       "resources": [
         {
