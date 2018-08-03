@@ -278,7 +278,8 @@
           "type": "config",
           "dependsOn": [
             "[resourceId('Microsoft.Web/sites', variables('webappName'))]",
-            "[concat(resourceId('Microsoft.Web/sites', variables('webappName')),'/extensions/MSDeploy')]"
+            "[concat(resourceId('Microsoft.Web/sites', variables('webappName')),'/extensions/MSDeploy')]",
+            "[concat(resourceId('Microsoft.Web/sites', variables('webappName')),'/config/appsettings')]"
           ],
           "properties": {
             "eventHubStorage": {
