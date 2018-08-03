@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <parameters>
-  <setParameter name="IIS Web Application Name" value="DeviceEmulator" />
+  <setParameter name="IIS Web Application Name" value="Default Web Site/DeviceEmulator_deploy" />
   <setParameter name="eventHubStorage-Web.config Connection String" value="DefaultEndpointsProtocol=https;AccountName=tswstowit;AccountKey=AnvV61gUCrU2pLG+WLFgvcGLgPzIX3nkLXIKwRlFPfCGZq7zBMhEr1gmHeMfAENie1drgHymUe3xXpFTtb0XHw==;EndpointSuffix=core.windows.net" />
   <setParameter name="eventHubConnectionString-Web.config Connection String" value="Endpoint=sb://iothub-ns-tswiot-623489-9a13e2750e.servicebus.windows.net/;SharedAccessKeyName=iothubowner;SharedAccessKey=jFTN09fGs7jyNQ8D16H+WokJXE1zHJB6djlPdzJa27M=" />
   <setParameter name="iotHubConnectionString-Web.config Connection String" value="HostName=tswiot.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=jFTN09fGs7jyNQ8D16H+WokJXE1zHJB6djlPdzJa27M=" />
