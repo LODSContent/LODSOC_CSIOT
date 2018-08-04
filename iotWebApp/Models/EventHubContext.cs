@@ -2,11 +2,7 @@
 using Microsoft.Azure.EventHubs.Processor;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using System.Web;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
 using System.Threading;
 
 namespace iotWebApp.Models
@@ -78,12 +74,7 @@ namespace iotWebApp.Models
                         List<DeviceReadingEntity> data = new List<DeviceReadingEntity>();
                         for (int i = 0; i < deviceNames.Count; i++)
                         {
-                            string deviceName = deviceNames[i];
-                            long prk = priorRowKeys[i];
-                            var query = new TableQuery<DeviceReadingEntity>();
-                            query.Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, deviceName));
-                            query.TakeCount = 5;
-                            data.AddRange((await storage.RetrieveTableData(5, deviceNames)).Data);
+                             data.AddRange((await storage.RetrieveTableData(5, deviceNames)).Data);
                         }
                         result.Data = data;
 
