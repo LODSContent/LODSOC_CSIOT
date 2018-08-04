@@ -15,30 +15,16 @@ namespace iotWebApp.Models
     public class EventHubProcessor : IEventProcessor
     {
 
-        private string eventHubStorageConnection;
+        private StorageContext storageContext;
         public EventHubProcessor() { }
-        public EventHubProcessor(string eventHubStorageConnection)
+        public EventHubProcessor(StorageContext context)
         {
-            this.eventHubStorageConnection = eventHubStorageConnection;
+            this.storageContext = context;
         }
         private CloudTable _table;
         public int MessageCount { get; set; }
 
-        public CloudTable Table
-        {
-            get
-            {
-                if (_table == null)
-                {
-                    var connectionString = eventHubStorageConnection;
-                    var account = CloudStorageAccount.Parse(connectionString);
-                    var client = account.CreateCloudTableClient();
-                    _table = client.GetTableReference("messages");
-                    _table.CreateIfNotExistsAsync().GetAwaiter();
-                }
-                return _table;
-            }
-        }
+
         public Task CloseAsync(PartitionContext context, CloseReason reason)
         {
             return Task.CompletedTask;
@@ -57,18 +43,21 @@ namespace iotWebApp.Models
 
         public Task ProcessEventsAsync(PartitionContext context, IEnumerable<EventData> messages)
         {
-            foreach (var eventData in messages)
+            Task t = Task.Run(async () =>
             {
-                var data = Encoding.UTF8.GetString(eventData.Body.Array, eventData.Body.Offset, eventData.Body.Count);
-                var entity = new DeviceReadingEntity(data);
-                if (entity.PartitionKey != null && entity.RowKey != null)
+                foreach (var eventData in messages)
                 {
-                    Table.ExecuteAsync(TableOperation.Insert(entity));
-                    MessageCount++;
+                    var data = Encoding.UTF8.GetString(eventData.Body.Array, eventData.Body.Offset, eventData.Body.Count);
+                    var entity = new DeviceReadingEntity(data);
+                    if (entity.PartitionKey != null && entity.RowKey != null)
+                    {
+                        await storageContext.LoadTableData(new DeviceReadingEntity[] { entity });
+                        MessageCount++;
+                    }
+
                 }
-
-            }
-
+            });
+            t.Wait();
             return context.CheckpointAsync();
 
         }

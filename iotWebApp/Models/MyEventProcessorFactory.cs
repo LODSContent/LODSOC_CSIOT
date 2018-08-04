@@ -8,15 +8,16 @@ namespace iotWebApp.Models
 {
     public class MyEventProcessorFactory : IEventProcessorFactory
     {
-        private string storageConnection;
-        public MyEventProcessorFactory(string storageConnection)
+        private StorageContext storageContext;
+        
+        public MyEventProcessorFactory(string storageConnection, string tableName, string containerName)
         {
-            this.storageConnection = storageConnection;
+            storageContext = new StorageContext(storageConnection, tableName, containerName);
 
         }
         public IEventProcessor CreateEventProcessor(PartitionContext context)
         {
-            return new EventHubProcessor(storageConnection);
+            return new EventHubProcessor(storageContext);
         }
     }
 }

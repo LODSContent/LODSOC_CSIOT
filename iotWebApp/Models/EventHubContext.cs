@@ -13,22 +13,31 @@ namespace iotWebApp.Models
 {
     public class EventHubContext
     {
-        public async Task<EvaluationResult> ReceiveEvents(DeviceWebAPIParameters parms)
+        private StorageContext storage;
+        private string tableName = "defaultreadings";
+        private string containerName = "eventhub2";
+        private DeviceWebAPIParameters parms;
+        public EventHubContext(DeviceWebAPIParameters parms)
+        {
+            this.parms = parms;
+            storage = new StorageContext(parms.EhubStorage, tableName, containerName);
+        }
+        public EventHubContext(DeviceWebAPIParameters parms, string tableName, string containerName)
+        {
+            this.tableName = tableName;
+            this.containerName = containerName;
+            this.parms = parms;
+            storage = new StorageContext(parms.EhubStorage, tableName,  containerName);
+        }
+        public async Task<EvaluationResult> ReceiveEvents()
         {
             var result = new EvaluationResult { Code = 0, Message = "Received messages", Passed = true };
             try
             {
                 var regUtil = new IotUtilities.IotRegistry(parms.IotConnection);
                 var deviceNames = await regUtil.GetDeviceNames();
-                var storageContainerName = "eventhub2";
-                var storageAccount = CloudStorageAccount.Parse(parms.EhubStorage);
-                var blobClient = storageAccount.CreateCloudBlobClient();
-                var container = blobClient.GetContainerReference(storageContainerName);
-                await container.CreateIfNotExistsAsync();
-                var tableClient = storageAccount.CreateCloudTableClient();
-                var table = tableClient.GetTableReference("messages");
-                await table.CreateIfNotExistsAsync();
-                var priorRowKeys = await getLatestTableRowKeys(table, deviceNames);
+
+                var priorRowKeys = await storage.RetrieveLastKeys(deviceNames);
                 var priorRowKey = priorRowKeys[0];
                 var currentRowKey = priorRowKey;
                 var eventProcessorHost = new EventProcessorHost(
@@ -36,11 +45,11 @@ namespace iotWebApp.Models
                     PartitionReceiver.DefaultConsumerGroupName,
                     parms.EhubConnection,
                     parms.EhubStorage,
-                    storageContainerName);
+                    this.containerName);
                 try
                 {
                     //await eventProcessorHost.RegisterEventProcessorAsync<EventHubProcessor>();
-                    await eventProcessorHost.RegisterEventProcessorFactoryAsync(new MyEventProcessorFactory(parms.EhubStorage));
+                    await eventProcessorHost.RegisterEventProcessorFactoryAsync(new MyEventProcessorFactory(parms.EhubStorage,tableName,containerName ));
                     var start = DateTime.Now;
                     var currentTime = DateTime.Now;
                     var seconds = (currentTime - start).TotalSeconds;
@@ -49,7 +58,7 @@ namespace iotWebApp.Models
                     {
                         Thread.Sleep(100);
                         currentTime = DateTime.Now;
-                        currentRowKey = (await getLatestTableRowKeys(table, deviceNames))[0];
+                        currentRowKey = (await storage.RetrieveLastKeys(deviceNames))[0];
                         seconds = (currentTime - start).TotalSeconds;
                         System.Diagnostics.Trace.WriteLine($"Seconds: {seconds}\tPrior: {priorRowKey}\tCurrent: {currentRowKey}");
                     }
@@ -74,9 +83,9 @@ namespace iotWebApp.Models
                             var query = new TableQuery<DeviceReadingEntity>();
                             query.Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, deviceName));
                             query.TakeCount = 5;
-                            data.AddRange(await table.ExecuteQuerySegmentedAsync(query,default(TableContinuationToken)));
+                            data.AddRange((await storage.RetrieveTableData(5, deviceNames)).Data);
                         }
-                        result.Data = new List<object>(data);
+                        result.Data = data;
 
 
                     }
@@ -95,23 +104,24 @@ namespace iotWebApp.Models
             return result;
         }
 
-        private async Task<List<long>> getLatestTableRowKeys(CloudTable table, List<string> partitionKeys)
-        {
-            List<long> results = new List<long>();
-            foreach (string partitionKey in partitionKeys)
-            {
-                var query = new TableQuery<TableEntity>();
-                query.Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, partitionKey));
+        //TODO: Delete if successfully builds
+        //private async Task<List<long>> getLatestTableRowKeys(CloudTable table, List<string> partitionKeys)
+        //{
+        //    List<long> results = new List<long>();
+        //    foreach (string partitionKey in partitionKeys)
+        //    {
+        //        var query = new TableQuery<TableEntity>();
+        //        query.Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, partitionKey));
 
-                var seg = await table.ExecuteQuerySegmentedAsync(query,default(TableContinuationToken));
-                var firstRow = seg.FirstOrDefault();
-                 results.Add(firstRow != null ? long.Parse(firstRow.RowKey) : long.MaxValue);
+        //        var seg = await table.ExecuteQuerySegmentedAsync(query,default(TableContinuationToken));
+        //        var firstRow = seg.FirstOrDefault();
+        //         results.Add(firstRow != null ? long.Parse(firstRow.RowKey) : long.MaxValue);
 
-            }
+        //    }
 
-            return results;
+        //    return results;
 
-        }
+        //}
        
 
 

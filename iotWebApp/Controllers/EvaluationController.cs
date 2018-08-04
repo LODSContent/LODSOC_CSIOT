@@ -20,8 +20,8 @@ namespace iotWebApp.Controllers
         }
         private DeviceContext deviceContext = new DeviceContext();
         [HttpPost]
-        [Route("getreadings")]
-        public async Task<EvaluationResult> GetReadings(DeviceWebAPIParameters parms)
+        [Route("generatedata")]
+        public async Task<EvaluationResult> GenerateData(DeviceWebAPIParameters parms)
         {
             parms.Fix(Config);
             var result = new EvaluationResult
@@ -57,12 +57,12 @@ namespace iotWebApp.Controllers
         }
 
         [HttpPost]
-        [Route("handleevents")]
-        public async Task<EvaluationResult> HandleEvents(DeviceWebAPIParameters parms)
+        [Route("verifyevents")]
+        public async Task<EvaluationResult> VerifyEvents(DeviceWebAPIParameters parms)
         {
             parms.Fix(Config);
-            var context = new EventHubContext();
-            var result = await context.ReceiveEvents(parms);
+            var context = new EventHubContext(parms);
+            var result = await context.ReceiveEvents();
             return result;
         }
 
@@ -84,6 +84,13 @@ namespace iotWebApp.Controllers
             var context = new DeviceContext();
             return await context.DeviceTwin(parms);
 
+        }
+
+        [HttpPost]
+        [Route("streamanalytics")]
+        public async Task<EvaluationResult> DeviceAnalytics(DeviceWebAPIParameters parms)
+        {
+            throw new NotImplementedException();
         }
     }
 

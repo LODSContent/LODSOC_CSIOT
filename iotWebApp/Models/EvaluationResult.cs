@@ -9,11 +9,11 @@ namespace iotWebApp.Models
     {
         public EvaluationResult()
         {
-            Data = new List<object>();
+            Data = new List<DeviceReadingEntity>();
         }
         public bool Passed { get; set; }
         public string Message { get; set; }
         public int Code { get; set; }
-        public List<object> Data  { get; set; }
+        public List<DeviceReadingEntity> Data  { get; set; }
     }
 }

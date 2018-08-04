@@ -1,51 +1,66 @@
 ﻿$(document).ready(function () {
-    $('#telemtry').click(getReadings);
+    $('#sendTelemtry').click(generateData);
+    $('#verifyTelemtry').click(verifyDeviceData);
     $('#messageToDevice').click(messageDevice);
     $('#deviceTwin').click(setDeviceTwin);
     $('#streamAnalytics').click(streamAnalytics);
 
 
-    function getReadings() {
-        $("#results").text("");
-        var readingPayload = {
+    function generateData() {
+        $("#currentTest").text("Generating sample device data");
+        var generateDataPayload = {
             iotConnection: $('#hubConnect').val(),
             ehubConnection: $('#eventHubConnect').val(),
             interval: 15,
             iterations: 50
         };
-        var eventsPayload = {
+        runTest("generatedata", generateDataPayload, "Generate Device Data", null, null, showResult, false, true);
+    }
+
+    function verifyDeviceData() {
+        $("#currentTest").text("Verifying device data capture");
+       var verifyDataPayload = {
             hubName: "-1",
             ehubConnection: $('#eventHubConnect').val(),
             iotConnection: $('#hubConnect').val(),
             eventReceiveDelay: 10
 
         };
-        //runTest("emptyTest", "", "Web API test", null, null, showResult, false, true);
-        runTest("getreadings", readingPayload, "Send", null, null, showResult, false, true);
-        runTest("handleevents", eventsPayload, "Retrieve", ["deviceID", "time", "reading"], ["Device", "Time", "Reading"], showResult, true, true);
+        runTest("verifyevents", verifyDataPayload, "Verify Device Data Capture", null, null, showResult, true, true);
     }
 
     function messageDevice() {
-        var messagePayload = {
+        $("#currentTest").text("Sending message to device Building001");
+       var messagePayload = {
             iotConnection: $('#hubConnect').val(),
             ehubConnection: $('#eventHubConnect').val()
         };
-        runTest("messagetodevice", messagePayload, "Message to Device", null, null, showResult, false, false);
-
-
+        runTest("messagetodevice", messagePayload, "Verify Message to Device", null, null, showResult, false, false);
     }
 
     function setDeviceTwin() {
-        var messagePayload = {
+        $("#currentTest").text("Configuring device Building001 via device twin.");
+       var messagePayload = {
             iotConnection: $('#hubConnect').val(),
             ehubConnection: $('#eventHubConnect').val()
         };
-        runTest("devicetwin", messagePayload, "Update Device Twin", null, null, showResult, false, true);
+        runTest("devicetwin", messagePayload, "Verify Device Twin Update", null, null, showResult, false, true);
 
     }
 
     function streamAnalytics() {
-        $("#results").text("");
+        $("#currentTest").text("Testing Stream Analytics");
+        var readingPayload = {
+            iotConnection: $('#hubConnect').val(),
+            ehubConnection: $('#eventHubConnect').val(),
+            interval: 250,
+            iterations: 50
+        };
+        runTest("getreadings", readingPayload, "Send", null, null, showResult, false, true);
+
+    }
+    function consumerGroups() {
+        $("#currentTest").text("Testing Consumer Groups and endpoint.");
         var readingPayload = {
             iotConnection: $('#hubConnect').val(),
             ehubConnection: $('#eventHubConnect').val(),
@@ -56,11 +71,16 @@
 
     }
 
-    function consumerGroups() {
 
-    }
-
-    function timeSeries() {
+    function cosmosDB() {
+        $("#currentTest").text("Testing Cosmos DB.");
+        var readingPayload = {
+            iotConnection: $('#hubConnect').val(),
+            ehubConnection: $('#eventHubConnect').val(),
+            interval: 250,
+            iterations: 50
+        };
+        runTest("getreadings", readingPayload, "Send", null, null, showResult, false, true);
 
     }
 
