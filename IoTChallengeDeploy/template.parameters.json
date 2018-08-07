@@ -3,7 +3,7 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
       "LabInstanceId": {
-        "value": "tsw123c"
+        "value": "tsw123"
       },
       "PasswordPrefix": {
         "value": "!1234tsw"
