@@ -23,7 +23,8 @@ namespace iotWebApp.Models
             {
                 DeviceID = this.DeviceName,
                 Reading = Reading,
-                Time = CurrentTime
+                Time = CurrentTime,
+                ReadingID = (DateTime.MaxValue - CurrentTime).Ticks
             };
         }
 
@@ -61,9 +62,11 @@ namespace iotWebApp.Models
 
     public class DeviceReading
     {
+        public long ReadingID { get; set; }
         public DateTime Time { get; set; }
         public string DeviceID { get; set; }
         public double Reading { get; set; }
+        public double AverageReading { get; set; }
     }
 
 }

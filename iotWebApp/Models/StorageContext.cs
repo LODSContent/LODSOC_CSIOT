@@ -6,21 +6,31 @@ using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.WindowsAzure.Storage.Blob;
 
-
+ 
 namespace iotWebApp.Models
 {
     public class StorageContext
     {
         private CloudBlobContainer container;
         private CloudTable table;
+        private CloudStorageAccount account;
         public StorageContext(string connectionString, string tableName, string containerName)
         {
-            var account = CloudStorageAccount.Parse(connectionString);
+            account = CloudStorageAccount.Parse(connectionString);
             if (!string.IsNullOrEmpty(containerName))
             {
                 var blobClient = account.CreateCloudBlobClient();
                 container = blobClient.GetContainerReference(containerName);
-                Task.Run(async () =>  await container.CreateIfNotExistsAsync()).Wait();
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await container.CreateIfNotExistsAsync();
+                    } catch (Exception ex)
+                    {
+                        System.Diagnostics.Trace.TraceError($"Error creating container:\r {ex.ToString()}");
+                    }
+                }).Wait();
             }
             if(!string.IsNullOrEmpty(tableName))
             {
@@ -82,9 +92,9 @@ namespace iotWebApp.Models
             if (partitionKeys == null)
             {
                 var query = new TableQuery<DeviceReadingEntity>();
-                var queryResult = table.ExecuteQuerySegmentedAsync(query, null);
+                query.TakeCount = rowCount;
                 var seg = await table.ExecuteQuerySegmentedAsync(query, default(TableContinuationToken));
-                foreach (var row in seg.Take(rowCount))
+                foreach (var row in seg)
                 {
                     output.Add(row);
                     totalRows++;
@@ -97,9 +107,9 @@ namespace iotWebApp.Models
                 {
                     var query = new TableQuery<DeviceReadingEntity>();
                     query.Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, key));
-                    var queryResult = table.ExecuteQuerySegmentedAsync(query, null);
+                    query.TakeCount = rowCount;
                     var seg = await table.ExecuteQuerySegmentedAsync(query, default(TableContinuationToken));
-                    foreach (var row in seg.Take(rowCount))
+                    foreach (var row in seg)
                     {
                         output.Add(row);
                         totalRows++;
@@ -111,6 +121,7 @@ namespace iotWebApp.Models
             result.Message = $"Returned {totalRows} rows from {table.Name}";
             return result;
         }
+
         public async Task<List<long>> RetrieveLastKeys(List<string> partitionKeys)
         {
             var result = new List<long>();
@@ -125,6 +136,30 @@ namespace iotWebApp.Models
             }
 
             return result;
+        }
+
+        public async Task<(int Matched, int Unmatched)> CompareContent( string primaryTableName)
+        {
+            int matched = 0; int unmatched = 0;
+            var pClient = account.CreateCloudTableClient();
+            var pTable = pClient.GetTableReference(primaryTableName);
+            var pQuery = new TableQuery<TableEntity>();
+            //pQuery.TakeCount = SampleSize;
+            var rows = await table.ExecuteQuerySegmentedAsync(pQuery, default(TableContinuationToken));
+
+            foreach (var row in rows)
+            {
+                var query = new TableQuery<TableEntity>();
+                var partitionFilter = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, row.PartitionKey);
+                var timeFilter = TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, row.RowKey);
+                query.Where(TableQuery.CombineFilters(partitionFilter, TableOperators.And, timeFilter));
+                var queryResult = table.ExecuteQuerySegmentedAsync(query, null);
+                var seg = await table.ExecuteQuerySegmentedAsync(query, default(TableContinuationToken));
+                if(seg.Count() > 0) { matched++; } else { unmatched++; }
+
+            }
+
+            return (matched, unmatched);
         }
     }
 }

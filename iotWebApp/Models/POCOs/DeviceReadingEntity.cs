@@ -12,16 +12,19 @@ namespace iotWebApp.Models
         }
         public DeviceReadingEntity(string data)
         {
-            var reading = JsonConvert.DeserializeObject<DeviceReading>(data);
-            this.RowKey = (DateTime.MaxValue - DateTime.Now).Ticks.ToString();
+             var reading = JsonConvert.DeserializeObject<DeviceReading>(data);
+            this.RowKey = reading.ReadingID.ToString();
             this.Time = reading.Time;
             this.DeviceID = reading.DeviceID;
             this.Reading = reading.Reading;
+            this.AverageReading = reading.AverageReading;
         }
         public DeviceReadingEntity(string partitionKey, string rowKey) : base(partitionKey, rowKey) { }
         public DateTime Time { get; set; }
         public string DeviceID { get => this.PartitionKey; set => this.PartitionKey = value; }
         public double Reading { get; set; }
+        public double AverageReading { get; set; }
+
 
     }
 }

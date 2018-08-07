@@ -23,29 +23,29 @@ namespace iotWebApp.Models
             this.tableName = tableName;
             this.containerName = containerName;
             this.parms = parms;
-            storage = new StorageContext(parms.EhubStorage, tableName,  containerName);
+            storage = new StorageContext(parms.EhubStorage, tableName, containerName);
         }
-        public async Task<EvaluationResult> ReceiveEvents()
+        public async Task<EvaluationResult> ReceiveEvents(string consumerGroup = null)
         {
             var result = new EvaluationResult { Code = 0, Message = "Received messages", Passed = true };
             try
             {
+                consumerGroup = consumerGroup ?? PartitionReceiver.DefaultConsumerGroupName;
                 var regUtil = new IotUtilities.IotRegistry(parms.IotConnection);
                 var deviceNames = await regUtil.GetDeviceNames();
-
                 var priorRowKeys = await storage.RetrieveLastKeys(deviceNames);
                 var priorRowKey = priorRowKeys[0];
                 var currentRowKey = priorRowKey;
                 var eventProcessorHost = new EventProcessorHost(
                     parms.HubName,
-                    PartitionReceiver.DefaultConsumerGroupName,
+                   consumerGroup,
                     parms.EhubConnection,
                     parms.EhubStorage,
                     this.containerName);
                 try
                 {
                     //await eventProcessorHost.RegisterEventProcessorAsync<EventHubProcessor>();
-                    await eventProcessorHost.RegisterEventProcessorFactoryAsync(new MyEventProcessorFactory(parms.EhubStorage,tableName,containerName ));
+                    await eventProcessorHost.RegisterEventProcessorFactoryAsync(new MyEventProcessorFactory(parms.EhubStorage, tableName, containerName));
                     var start = DateTime.Now;
                     var currentTime = DateTime.Now;
                     var seconds = (currentTime - start).TotalSeconds;
@@ -69,15 +69,13 @@ namespace iotWebApp.Models
                     else
                     {
                         //Wait for events to come in.  If synchronous, this will be 0 seconds.  This can be no more than 10 seconds.
-                        if (parms.EventReceiveDelay>10) { parms.EventReceiveDelay = 10; }
-                        if (parms.EventReceiveDelay > 0) { Thread.Sleep(parms.EventReceiveDelay*1000); }
+                        if (parms.EventReceiveDelay > 10) { parms.EventReceiveDelay = 10; }
+                        if (parms.EventReceiveDelay > 0) { Thread.Sleep(parms.EventReceiveDelay * 1000); }
                         List<DeviceReadingEntity> data = new List<DeviceReadingEntity>();
-                        for (int i = 0; i < deviceNames.Count; i++)
-                        {
-                             data.AddRange((await storage.RetrieveTableData(5, deviceNames)).Data);
-                        }
-                        result.Data = data;
 
+                        data.AddRange((await storage.RetrieveTableData(5, deviceNames)).Data);
+                        result.Data = data;
+                        result.Message = $"IoT device messages were received and processed into the {tableName} storage table";
 
                     }
                 }
@@ -95,25 +93,60 @@ namespace iotWebApp.Models
             return result;
         }
 
-        //TODO: Delete if successfully builds
-        //private async Task<List<long>> getLatestTableRowKeys(CloudTable table, List<string> partitionKeys)
-        //{
-        //    List<long> results = new List<long>();
-        //    foreach (string partitionKey in partitionKeys)
-        //    {
-        //        var query = new TableQuery<TableEntity>();
-        //        query.Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, partitionKey));
+        public async Task<EvaluationResult> TestConsumerGroups()
+        {
+            var result = new EvaluationResult { Code = 0, Passed = true, Message = "Passed" };
+            try
+            {
+                List<Task<EvaluationResult>> tasks = new List<Task<EvaluationResult>>();
+                tasks.Add(Task.Run<EvaluationResult>(async () => await (new EventHubContext(parms, "primary", "primary")).ReceiveEvents("primary")));
+                tasks.Add(Task.Run<EvaluationResult>(async () => await (new EventHubContext(parms, "secondary", "secondary")).ReceiveEvents("primary")));
 
-        //        var seg = await table.ExecuteQuerySegmentedAsync(query,default(TableContinuationToken));
-        //        var firstRow = seg.FirstOrDefault();
-        //         results.Add(firstRow != null ? long.Parse(firstRow.RowKey) : long.MaxValue);
+                EvaluationResult[] cgResults = { tasks[0].Result, tasks[1].Result };
 
-        //    }
+                try
+                {
+                    if (cgResults[0].Passed && cgResults[1].Passed)
+                    {
+                        var testStorage = new StorageContext(parms.EhubStorage, "secondary", null);
+                        var testResults = await testStorage.CompareContent("primary");
 
-        //    return results;
+                        if (testResults.Unmatched>1)
+                        {
+                             result.Passed = false;
+                            result.Code = -1;
+                            result.Message = "The consumer groups returned different data.";
 
-        //}
-       
+                        }
+                        if (result.Passed) {
+                            result.Message = "Both consumer groups retrieved the same data.";
+                            result.Data = new List<DeviceReadingEntity>(cgResults[0].Data);
+                        }
+                    }
+                    else
+                    {
+                        result.Passed = false;
+                        result.Code = -1;
+                        result.Message = (cgResults[0].Passed ? "" : $"Primary consumer group failed: {cgResults[0].Message}. ") + (cgResults[1].Passed ? "" : $"Secondary consumer group failed: {cgResults[1].Message}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    result.Code = ex.HResult;
+                    result.Passed = false;
+                    result.Message = $"Data capture on both consumer groups was successful, however an error occurred when comparing the results: {ex.Message}";
+                }
+            }
+            catch (Exception outerEx)
+            {
+                result.Code = outerEx.HResult;
+                result.Passed = false;
+                result.Message = $"An error occurred while retrieving data from multiple consumer groups: {outerEx.Message}";
+
+            }
+
+            return result;
+        }
 
 
     }

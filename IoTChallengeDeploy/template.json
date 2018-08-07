@@ -40,7 +40,6 @@
   },
   "resources": [
 
-    //Iot Hub
     {
       "type": "Microsoft.Devices/IotHubs",
       "sku": {
@@ -142,7 +141,36 @@
       "dependsOn": []
     },
 
-    //Cosmos DB
+    {
+      "apiVersion": "2016-02-03",
+      "type": "Microsoft.Devices/IotHubs/eventhubEndpoints/ConsumerGroups",
+      "condition": "[variables('deployIoTHub')]",
+      "name": "[concat(variables('iotHubName'), '/events/analytics')]",
+      "dependsOn": [
+        "[concat('Microsoft.Devices/Iothubs/', variables('iotHubName'))]"
+      ]
+    },
+
+    {
+      "apiVersion": "2016-02-03",
+      "type": "Microsoft.Devices/IotHubs/eventhubEndpoints/ConsumerGroups",
+      "condition": "[variables('deployIoTHub')]",
+      "name": "[concat(variables('iotHubName'), '/events/cosmosdb')]",
+      "dependsOn": [
+        "[concat('Microsoft.Devices/Iothubs/',variables('iotHubName'))]"
+      ]
+    },
+
+    {
+      "apiVersion": "2016-02-03",
+      "type": "Microsoft.Devices/IotHubs/eventhubEndpoints/ConsumerGroups",
+      "condition": "[variables('deployIoTHub')]",
+      "name": "[concat(variables('iotHubName'), '/events/timeseries')]",
+      "dependsOn": [
+        "[concat('Microsoft.Devices/Iothubs/',variables('iotHubName'))]"
+      ]
+    },
+
     {
       "type": "Microsoft.DocumentDB/databaseAccounts",
       "kind": "GlobalDocumentDB",
@@ -167,7 +195,6 @@
       "dependsOn": []
     },
 
-    //Storage Account
     {
       "type": "Microsoft.Storage/storageAccounts",
       "sku": {
@@ -205,10 +232,6 @@
       "dependsOn": []
     },
 
- 
-
-
-    //App Service Plan
     {
       "name": "[variables('aspName')]",
       "type": "Microsoft.Web/serverfarms",
@@ -227,7 +250,6 @@
       }
     },
 
-    //Web App
     {
       "name": "[variables('webappName')]",
       "type": "Microsoft.Web/sites",
@@ -302,63 +324,11 @@
 
 
 
-    ////Stream Analytics
-    //{
-    //  "type": "Microsoft.StreamAnalytics/streamingjobs",
-    //  "name": "[variables('streamAnalyticsName')]",
-    //  "apiVersion": "2016-03-01",
-    //  "location": "[resourceGroup().location]",
-    //  "scale": null,
-    //  "tags": {
-    //    "displayName": "Stream Analytics"
-    //  },
-    //  "properties": {
-    //    "sku": {
-    //      "name": "Standard"
-    //    },
-    //    "outputStartMode": "JobStartTime",
-    //    "eventsOutOfOrderPolicy": "Adjust",
-    //    "outputErrorPolicy": "Stop",
-    //    "eventsOutOfOrderMaxDelayInSeconds": 0,
-    //    "eventsLateArrivalMaxDelayInSeconds": 5,
-    //    "dataLocale": "en-US",
-    //    "compatibilityLevel": "1.0"
-    //  },
-    //  "dependsOn": []
-    //},
-
-
-    //Time Series Insights
-    //{
-    //  "type": "Microsoft.TimeSeriesInsights/environments",
-    //  "sku": {
-    //    "name": "S1",
-    //    "capacity": 1
-    //  },
-    //  "name": "[variables('timeSeriesName')]",
-    //  "tags": {
-    //    "displayName": "Time Series Insights"
-    //  },
-    //  "apiVersion": "2017-11-15",
-    //  "location": "[resourceGroup().location]",
-    //  "scale": null,
-    //  "properties": {
-    //    "dataRetentionTime": "P31D",
-    //    "storageLimitExceededBehavior": "PurgeOldData"
-    //  },
-    //  "dependsOn": []
-    //},
-
-   ////Data Lake
-
-   // {
-   //   "type": "Microsoft.DataLakeStore/accounts",
-   //   "name": "[variables('dataLakeName')]",
-   //   "apiVersion": "2016-11-01",
-   //   "location": "eastus2",
-   //   "scale": null,
-   //   "properties": {},
-   //   "dependsOn": []
-   // },
-  ]
+  ],
+  "outputs": {
+    "storageKey": {
+      "type": "string",
+      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',concat(listKeys(variables('storageAccountId'),'2015-05-01-preview').key1))]"
+    }
+  }
 }

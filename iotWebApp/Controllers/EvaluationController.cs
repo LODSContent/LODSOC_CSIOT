@@ -13,12 +13,13 @@ namespace iotWebApp.Controllers
     public class EvaluationController : Controller
     {
         private readonly IConfiguration Config;
+        private DeviceContext deviceContext = new DeviceContext();
 
         public EvaluationController(IConfiguration config)
         {
             Config = config;
         }
-        private DeviceContext deviceContext = new DeviceContext();
+
         [HttpPost]
         [Route("generatedata")]
         public async Task<EvaluationResult> GenerateData(DeviceWebAPIParameters parms)
@@ -88,9 +89,22 @@ namespace iotWebApp.Controllers
 
         [HttpPost]
         [Route("streamanalytics")]
-        public async Task<EvaluationResult> DeviceAnalytics(DeviceWebAPIParameters parms)
+        public async Task<EvaluationResult> StreamAnalytics(DeviceWebAPIParameters parms)
         {
-            throw new NotImplementedException();
+            parms.Fix(Config);
+            var context = new StreamAnalyticsContext(parms);
+            var result = await context.VerifyData();
+            return result;
+        }
+
+        [HttpPost]
+        [Route("consumergroups")]
+        public async Task<EvaluationResult> ConsumerGroups(DeviceWebAPIParameters parms)
+        {
+            parms.Fix(Config);
+            var context = new EventHubContext(parms);
+            var result = await context.TestConsumerGroups();
+            return result;
         }
     }
 

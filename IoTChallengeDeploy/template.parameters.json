@@ -3,13 +3,13 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
       "LabInstanceId": {
-        "value": "tsw123"
+        "value": "tsw123c"
       },
       "PasswordPrefix": {
         "value": "!1234tsw"
       },
       "testType": {
-        "value": 63
+        "value": 255
       },
       "webappDeployPackageURI": {
         "value": "https://github.com/twallace27603/lods-csiot/blob/master/iotWebApp/deploy/iotWebApp.zip?raw=true"

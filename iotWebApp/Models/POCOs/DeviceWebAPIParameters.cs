@@ -18,7 +18,7 @@ namespace iotWebApp.Models
             EhubStorage = fixStringProperty(Config["ConnectionStrings:eventHubStorage"], EhubStorage);
             Interval = fixIntProperty(Interval, Config["interval"]);
             Iterations = fixIntProperty(Iterations, Config["interval"]);
-            HubName = fixStringProperty(Config["eventHubName"], HubName);
+            HubName = IotConnection.Split(';')[0].Split('=')[1].Split('.')[0];
             EventReceiveDelay = fixIntProperty(EventReceiveDelay, Config["eventReceiveDelay"]);
         }
         private string fixStringProperty(string replace, string prop)
