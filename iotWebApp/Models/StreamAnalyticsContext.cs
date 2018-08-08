@@ -23,7 +23,7 @@ namespace iotWebApp.Models
             {
                 var iotreg = new IotUtilities.IotRegistry(parms.IotConnection);
                 var devices = await iotreg.GetDeviceNames();
-                result = await storage.RetrieveTableData(5, devices);
+                result = await storage.RetrieveProcessedData(5, devices);
             }
             catch (Exception ex)
             {

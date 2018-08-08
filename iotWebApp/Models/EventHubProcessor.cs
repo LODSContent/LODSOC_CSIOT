@@ -45,7 +45,7 @@ namespace iotWebApp.Models
                     var entity = new DeviceReadingEntity(data);
                     if (entity.PartitionKey != null && entity.RowKey != null)
                     {
-                        await storageContext.LoadTableData(new DeviceReadingEntity[] { entity });
+                        await storageContext.LoadEventData(new DeviceReadingEntity[] { entity });
                         MessageCount++;
                     }
 

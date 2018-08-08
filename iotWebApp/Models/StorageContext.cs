@@ -5,8 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.WindowsAzure.Storage.Blob;
+using System.Threading;
 
- 
 namespace iotWebApp.Models
 {
     public class StorageContext
@@ -26,13 +26,14 @@ namespace iotWebApp.Models
                     try
                     {
                         await container.CreateIfNotExistsAsync();
-                    } catch (Exception ex)
+                    }
+                    catch (Exception ex)
                     {
                         System.Diagnostics.Trace.TraceError($"Error creating container:\r {ex.ToString()}");
                     }
                 }).Wait();
             }
-            if(!string.IsNullOrEmpty(tableName))
+            if (!string.IsNullOrEmpty(tableName))
             {
                 var tableClient = account.CreateCloudTableClient();
                 table = tableClient.GetTableReference(tableName);
@@ -40,9 +41,10 @@ namespace iotWebApp.Models
             }
         }
 
-        public async Task<EvaluationResult> LoadTableData(DeviceReadingEntity[] data)
+        public async Task<EvaluationResult> LoadEventData(DeviceReadingEntity[] data)
         {
-            if (data.Length == 0) {
+            if (data.Length == 0)
+            {
                 return new EvaluationResult { Code = -1, Message = $"No data to load to {table.Name}", Passed = false };
             }
             var result = new EvaluationResult { Code = 0, Message = "Loaded table data", Passed = true };
@@ -84,7 +86,7 @@ namespace iotWebApp.Models
 
         }
 
-        public async Task<EvaluationResult> RetrieveTableData(int rowCount, List<string> partitionKeys)
+        public async Task<EvaluationResult> RetrieveProcessedData(int rowCount, List<string> partitionKeys)
         {
             var result = new EvaluationResult { Code = 0, Message = "Returned table data successfully", Passed = true };
             int totalRows = 0;
@@ -101,9 +103,10 @@ namespace iotWebApp.Models
                 }
 
 
-            } else
+            }
+            else
             {
-                foreach(var key in partitionKeys)
+                foreach (var key in partitionKeys)
                 {
                     var query = new TableQuery<DeviceReadingEntity>();
                     query.Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, key));
@@ -117,7 +120,7 @@ namespace iotWebApp.Models
 
                 }
             }
-            result.Data =  output;
+            result.Data = output;
             result.Message = $"Returned {totalRows} rows from {table.Name}";
             return result;
         }
@@ -138,16 +141,11 @@ namespace iotWebApp.Models
             return result;
         }
 
-        public async Task<(int Matched, int Unmatched)> CompareContent( string primaryTableName)
+        public async Task<(int Matched, int Unmatched)> CompareContent(string primaryTableName)
         {
             int matched = 0; int unmatched = 0;
-            var pClient = account.CreateCloudTableClient();
-            var pTable = pClient.GetTableReference(primaryTableName);
-            var pQuery = new TableQuery<TableEntity>();
-            //pQuery.TakeCount = SampleSize;
-            var rows = await table.ExecuteQuerySegmentedAsync(pQuery, default(TableContinuationToken));
 
-            foreach (var row in rows)
+            foreach (var row in await RetrieveTableData(primaryTableName, 0))
             {
                 var query = new TableQuery<TableEntity>();
                 var partitionFilter = TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, row.PartitionKey);
@@ -155,11 +153,66 @@ namespace iotWebApp.Models
                 query.Where(TableQuery.CombineFilters(partitionFilter, TableOperators.And, timeFilter));
                 var queryResult = table.ExecuteQuerySegmentedAsync(query, null);
                 var seg = await table.ExecuteQuerySegmentedAsync(query, default(TableContinuationToken));
-                if(seg.Count() > 0) { matched++; } else { unmatched++; }
+                if (seg.Count() > 0) { matched++; } else { unmatched++; }
 
             }
 
             return (matched, unmatched);
         }
+
+        public async Task<List<DeviceReadingEntity>> RetrieveTableData(string TableName, int rowCount)
+        {
+            var pClient = account.CreateCloudTableClient();
+            var pTable = pClient.GetTableReference(TableName);
+            var pQuery = new TableQuery<DeviceReadingEntity>();
+            if (rowCount > 0) pQuery.TakeCount = rowCount;
+            var rows = await table.ExecuteQuerySegmentedAsync(pQuery, default(TableContinuationToken));
+            return rows.Results;
+
+
+        }
+
+        public async Task<EvaluationResult> GetFirstBlob(string containerName, int waitTime)
+        {
+            var result = new EvaluationResult { Passed = true, Message = "Passed", Code = 0 };
+            try
+            {
+                var startTime = DateTime.Now;
+                var client = account.CreateCloudBlobClient();
+                var container = client.GetContainerReference(containerName);
+                if (!await container.ExistsAsync())
+                {
+                    result.Code = -1;
+                    result.Passed = false;
+                    result.Message = $"Blob container {container} does not exist.";
+
+                }
+                else
+                {
+                    var files = await container.ListBlobsSegmentedAsync(default(BlobContinuationToken));
+                    var count = files.Results.Count();
+                    var elapsed = (DateTime.Now - startTime).TotalSeconds;
+                    while ((count == 0) && (elapsed < waitTime))
+                    {
+                        Thread.Sleep(1000);
+                        files = container.ListBlobsSegmentedAsync(default(BlobContinuationToken)).GetAwaiter().GetResult();
+                        count = files.Results.Count();
+                        elapsed = (DateTime.Now - startTime).TotalSeconds;
+                    }
+                    result.Code = count > 0 ? count : -1;
+                    result.Passed = count > 0;
+                    result.Message = count > 0 ? "Located the expected blob file" : "Did not locate any blob files";
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Code = ex.HResult;
+                result.Passed = false;
+                result.Message = $"Error: {ex.Message}";
+            }
+
+            return result;
+        }
+
     }
 }

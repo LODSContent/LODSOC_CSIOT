@@ -106,6 +106,25 @@ namespace iotWebApp.Controllers
             var result = await context.TestConsumerGroups();
             return result;
         }
+
+        [HttpPost]
+        [Route("endpoint")]
+        public async Task<EvaluationResult> Endpoint(DeviceWebAPIParameters parms)
+        {
+            parms.Fix(Config);
+            var context = new EventHubContext(parms);
+            var result = await context.TestEndpoint();
+            return result;
+        }
+        [HttpPost]
+        [Route("cosmosdb")]
+        public EvaluationResult CosmosDB(DeviceWebAPIParameters parms)
+        {
+            parms.Fix(Config);
+            var context = new CosmosDBContext(parms);
+            var result =  context.TestDocuments("iot","events");
+            return result;
+        }
     }
 
 

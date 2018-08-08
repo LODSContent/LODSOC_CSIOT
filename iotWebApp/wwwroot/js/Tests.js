@@ -3,8 +3,10 @@
     $('#verifyTelemtry').click(verifyDeviceData);
     $('#messageToDevice').click(messageDevice);
     $('#deviceTwin').click(setDeviceTwin);
-    $('#streamAnalytics').click(streamAnalytics);
-    $('#consumerGroup').click(consumerGroups);
+    $('#streamAnalytics').click(verifyStreamAnalytics);
+    $('#consumerGroup').click(verifyConsumerGroups);
+    $('#endpoint').click(verifyEndpoint);
+    $('#cosmosDB').click(verifyCosmosDB);
 
     var deviceColumns = [{ ColumnName: "deviceID", Title: "Device" }, { ColumnName: "time", Title: "Time" }, { ColumnName: "reading", Title: "Reading" }];
     var analyticsColumns = [{ ColumnName: "deviceID", Title: "Device" }, { ColumnName: "time", Title: "Time" }, { ColumnName: "averageReading", Title: "Reading" }];
@@ -29,20 +31,25 @@
         runTest("devicetwin", getPayload(0, 0), "Verify Device Twin Update", null,  showResult, false, true);
     }
 
-    function streamAnalytics() {
+    function verifyStreamAnalytics() {
         $('#currentTest').text("Testing Stream Analytics");
         runTest("streamanalytics", getPayload(250, 50), "Testng Stream analytics results", analyticsColumns, showResult, true, true);
     }
 
 
-    function consumerGroups() {
-        showStart("Testing Consumer Groups and endpoint.");
+    function verifyConsumerGroups() {
+        showStart("Testing Consumer Groups.");
         runTest("consumergroups", getPayload(250, 50), "Test Consumer Groups", deviceColumns,  showResult, true, true);
     }
 
-    function cosmosDB() {
+    function verifyEndpoint() {
+        showStart("Testing Endpoint.");
+        runTest("endpoint", getPayload(250, 50), "Test Endpoint", deviceColumns, showResult, false, true);
+    }
+
+    function verifyCosmosDB() {
         showStart("Testing Cosmos DB.");
-        runTest("getreadings", getPayload(250, 50), "Send", null,  showResult, false, true);
+        runTest("cosmosdb", getPayload(250, 50), "Cosmos DB", deviceColumns,  showResult, true, true);
     }
 
     function getPayload(interval, iterations ) {

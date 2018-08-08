@@ -7,6 +7,7 @@ namespace iotWebApp.Models
         public string IotConnection { get; set; }
         public string EhubConnection { get; set; }
         public string EhubStorage { get; set; }
+        public string CosmosDBConnection { get; set; }
         public int Interval { get; set; }
         public int Iterations { get; set; }
         public string HubName { get; set; }
@@ -14,6 +15,7 @@ namespace iotWebApp.Models
         public void Fix(IConfiguration Config)
         {
             IotConnection = fixStringProperty(Config["ConnectionStrings:iotHubConnectionString"], IotConnection);
+            CosmosDBConnection = fixStringProperty(Config["ConnectionStrings:CosmosDBConnection"], CosmosDBConnection);
             EhubConnection = fixStringProperty(Config["ConnectionStrings:eventHubConnectionString"], EhubConnection);
             EhubStorage = fixStringProperty(Config["ConnectionStrings:eventHubStorage"], EhubStorage);
             Interval = fixIntProperty(Interval, Config["interval"]);

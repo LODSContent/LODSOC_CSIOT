@@ -73,7 +73,7 @@ namespace iotWebApp.Models
                         if (parms.EventReceiveDelay > 0) { Thread.Sleep(parms.EventReceiveDelay * 1000); }
                         List<DeviceReadingEntity> data = new List<DeviceReadingEntity>();
 
-                        data.AddRange((await storage.RetrieveTableData(5, deviceNames)).Data);
+                        data.AddRange((await storage.RetrieveProcessedData(5, deviceNames)).Data);
                         result.Data = data;
                         result.Message = $"IoT device messages were received and processed into the {tableName} storage table";
 
@@ -147,6 +147,13 @@ namespace iotWebApp.Models
 
             return result;
         }
+
+        public async Task<EvaluationResult> TestEndpoint()
+        {
+            
+            return await storage.GetFirstBlob("eventhubep",60);
+        }
+
 
 
     }
