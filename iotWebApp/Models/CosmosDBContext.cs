@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.Azure.Documents.Client;
 using System.Linq;
+using Microsoft.Azure.Documents;
 
 namespace iotWebApp.Models
 {
@@ -16,8 +17,11 @@ namespace iotWebApp.Models
         public CosmosDBContext(DeviceWebAPIParameters parms)
         {
             this.parms = parms;
-            string uri = parms.CosmosDBConnection.Split(';')[0].Split('=')[1];
-            string key = parms.CosmosDBConnection.Split(';')[1].Split('=')[1];
+            var uriClause = parms.CosmosDBConnection.Split(';')[0];
+            var keyClause = parms.CosmosDBConnection.Split(';')[1];
+            var eqPos = keyClause.IndexOf('=');
+            var key  = keyClause.Substring(eqPos + 1, keyClause.Length - eqPos - 1);
+            string uri = uriClause.Split('=')[1];
             client = new DocumentClient(new Uri(uri), key);
         }
 
@@ -26,11 +30,13 @@ namespace iotWebApp.Models
             var result = new EvaluationResult { Code = 0, Message = "Received messages", Passed = true };
             try
             {
-                IQueryable<DeviceReading> query = client.CreateDocumentQuery<DeviceReading>(UriFactory.CreateDocumentCollectionUri(databaseName, collectionName));
+                var spec = new SqlQuerySpec("SELECT TOP 10 c.DeviceID, c.Time, c.Reading FROM c");
+                IQueryable<DeviceReadingEntity> query = client.CreateDocumentQuery<DeviceReadingEntity>(UriFactory.CreateDocumentCollectionUri(databaseName, collectionName),spec);
                 var rows = query.ToList();
                 result.Passed = rows.Count > 0;
                 result.Code = result.Passed ? rows.Count : -1;
                 result.Message = result.Passed ? "Retrieved readings from Cosmos DB" : "Did not retrieve any readings from Cosmos DB";
+                result.Data = rows;
             }
             catch(Exception ex)
             {
