@@ -1,0 +1,338 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "LabInstanceId": {
+      "type": "string",
+      "defaultValue": "1234tsw"
+    },
+    "PasswordPrefix": {
+      "type": "string",
+      "defaultValue": "tsw1234tsw"
+    },
+    "testType": {
+      "type": "int",
+      "defaultValue": 1
+    },
+    "webappDeployPackageURI": {
+      "type": "string",
+      "minLength": 1,
+      "defaultValue": "https://github.com/twallace27603/lods-csiot/blob/master/deploy/DeviceEmulator.zip?raw=true",
+      "metadata": {
+        "description": "Name of the webdeploy package"
+      }
+    }
+
+  },
+  "variables": {
+    "iotHubName": "[concat('iot',parameters('LabInstanceId'))]",
+    "storageAccountName": "[concat('sa',parameters('LabInstanceId'))]",
+    "cosmosDbName": "[concat('cdb',parameters('LabInstanceId'))]",
+    "webappName": "[concat('lods', parameters('LabInstanceId'))]",
+    "aspName": "iotChallenge-ASP",
+    "aspSku": "S1",
+    "storageAccountId": "[concat(resourceGroup().id,'/providers/Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+    "cosmosDbId": "[concat(resourceGroup().id,'/providers/Microsoft.DocumentDB/databaseAccounts/', variables('cosmosDbName'))]",
+    "advanced": "[bool(or(or(equals(parameters('testType'),'3'),equals(parameters('testType'),'12')), or(equals(parameters('testType'),'48'),equals(parameters('testType'),'63'))))]",
+    "deployIoTHub": "[bool(greater(parameters('testType'),3))]",
+    "deployDataLake": "[bool(or(equals(parameters('testType'),16),greater(parameters('testType'),32)))]"
+
+  },
+  "resources": [
+
+    {
+      "type": "Microsoft.Devices/IotHubs",
+      "sku": {
+        "name": "S1",
+        "tier": "Standard",
+        "capacity": 1
+      },
+      "name": "[variables('iotHubName')]",
+      "apiVersion": "2018-04-01",
+      "location": "[resourceGroup().location]",
+      "condition": "[variables('deployIoTHub')]",
+      "tags": {
+        "displayName": "IoT Hub"
+      },
+      "scale": null,
+      "properties": {
+        "operationsMonitoringProperties": {
+          "events": {
+            "None": "None",
+            "Connections": "None",
+            "DeviceTelemetry": "None",
+            "C2DCommands": "None",
+            "DeviceIdentityOperations": "None",
+            "FileUploadOperations": "None",
+            "Routes": "None"
+          }
+        },
+        "ipFilterRules": [],
+        "eventHubEndpoints": {
+          "events": {
+            "retentionTimeInDays": 1,
+            "partitionCount": 4,
+            "partitionIds": [
+              "0",
+              "1",
+              "2",
+              "3"
+            ],
+            "path": "[variables('iotHubName')]",
+            "endpoint": "[concat('sb://iothub-ns-', variables('iotHubName'),'-623489-9a13e2750e.servicebus.windows.net/')]"
+          },
+          "operationsMonitoringEvents": {
+            "retentionTimeInDays": 1,
+            "partitionCount": 4,
+            "partitionIds": [
+              "0",
+              "1",
+              "2",
+              "3"
+            ],
+            "path": "[concat(variables('iotHubName'),'-operationmonitoring')]",
+            "endpoint": "[concat('sb://iothub-ns-', variables('iotHubName'),'-623489-9a13e2750e.servicebus.windows.net/')]"
+          }
+        },
+        "routing": {
+          "endpoints": {
+            "serviceBusQueues": [],
+            "serviceBusTopics": [],
+            "eventHubs": [],
+            "storageContainers": []
+          },
+          "routes": [],
+          "fallbackRoute": {
+            "name": "$fallback",
+            "source": "DeviceMessages",
+            "condition": "true",
+            "endpointNames": [
+              "events"
+            ],
+            "isEnabled": true
+          }
+        },
+        "storageEndpoints": {
+          "$default": {
+            "sasTtlAsIso8601": "PT1H",
+            "connectionString": "",
+            "containerName": ""
+          }
+        },
+        "messagingEndpoints": {
+          "fileNotifications": {
+            "lockDurationAsIso8601": "PT1M",
+            "ttlAsIso8601": "PT1H",
+            "maxDeliveryCount": 10
+          }
+        },
+        "enableFileUploadNotifications": false,
+        "cloudToDevice": {
+          "maxDeliveryCount": 10,
+          "defaultTtlAsIso8601": "PT1H",
+          "feedback": {
+            "lockDurationAsIso8601": "PT1M",
+            "ttlAsIso8601": "PT1H",
+            "maxDeliveryCount": 10
+          }
+        },
+        "features": "None"
+      },
+      "dependsOn": []
+    },
+
+    {
+      "apiVersion": "2016-02-03",
+      "type": "Microsoft.Devices/IotHubs/eventhubEndpoints/ConsumerGroups",
+      "condition": "[variables('deployIoTHub')]",
+      "name": "[concat(variables('iotHubName'), '/events/analytics')]",
+      "dependsOn": [
+        "[concat('Microsoft.Devices/Iothubs/', variables('iotHubName'))]"
+      ]
+    },
+
+    {
+      "apiVersion": "2016-02-03",
+      "type": "Microsoft.Devices/IotHubs/eventhubEndpoints/ConsumerGroups",
+      "condition": "[variables('deployIoTHub')]",
+      "name": "[concat(variables('iotHubName'), '/events/cosmosdb')]",
+      "dependsOn": [
+        "[concat('Microsoft.Devices/Iothubs/',variables('iotHubName'))]"
+      ]
+    },
+
+    {
+      "apiVersion": "2016-02-03",
+      "type": "Microsoft.Devices/IotHubs/eventhubEndpoints/ConsumerGroups",
+      "condition": "[variables('deployIoTHub')]",
+      "name": "[concat(variables('iotHubName'), '/events/timeseries')]",
+      "dependsOn": [
+        "[concat('Microsoft.Devices/Iothubs/',variables('iotHubName'))]"
+      ]
+    },
+
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "kind": "GlobalDocumentDB",
+      "name": "[variables('cosmosDbName')]",
+      "apiVersion": "2015-04-08",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "defaultExperience": "DocumentDB",
+        "displayName": "Document DB - Table API"
+      },
+      "scale": null,
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session",
+          "maxIntervalInSeconds": 5,
+          "maxStalenessPrefix": 100
+        },
+        "name": "[variables('cosmosDbName')]"
+      },
+      "dependsOn": []
+    },
+
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "sku": {
+        "name": "Standard_RAGRS",
+        "tier": "Standard"
+      },
+      "kind": "Storage",
+      "name": "[variables('storageAccountName')]",
+      "apiVersion": "2018-03-01-preview",
+      "location": "[resourceGroup().location]",
+      "tags": {
+        "displayName": "Storage Account"
+      },
+      "scale": null,
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": false,
+        "encryption": {
+          "services": {
+            "file": {
+              "enabled": true
+            },
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "dependsOn": []
+    },
+
+    {
+      "name": "[variables('aspName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-08-01",
+      "sku": {
+        "name": "[variables('aspSku')]"
+      },
+      "dependsOn": [],
+      "tags": {
+        "displayName": "iotChallenge-ASP"
+      },
+      "properties": {
+        "name": "[variables('aspName')]",
+        "numberOfWorkers": 1
+      }
+    },
+
+    {
+      "name": "[variables('webappName')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-08-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('aspName'))]"
+      ],
+      "tags": {
+        "[concat('hidden-related:', resourceId('Microsoft.Web/serverfarms', variables('aspName')))]": "Resource",
+        "displayName": "webappname"
+      },
+      "properties": {
+        "name": "[variables('webappName')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('aspName'))]",
+        "siteConfig": {
+          "AlwaysOn": true
+        }
+      },
+      "resources": [
+        {
+          "name": "MSDeploy",
+          "type": "extensions",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('webappName'))]"
+          ],
+          "tags": {
+            "displayName": "webappDeploy"
+          },
+          "properties": {
+            "packageUri": "[parameters('webappDeployPackageURI')]"
+          }
+        },
+        {
+          "name": "appsettings",
+          "type": "config",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('webappName'))]",
+            "[concat(resourceId('Microsoft.Web/sites', variables('webappName')),'/extensions/MSDeploy')]"
+
+          ],
+          "tags": {
+            "displayName": "webAppSettings"
+          },
+          "properties": {
+            "testType": "[parameters('testType')]",
+            "eventHubName": "[variables('iotHubName')]"
+          }
+
+        },
+        {
+          "apiVersion": "2015-08-01",
+          "name": "connectionstrings",
+          "type": "config",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/sites', variables('webappName'))]",
+            "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbName'))]",
+            "[concat(resourceId('Microsoft.Web/sites', variables('webappName')),'/extensions/MSDeploy')]",
+            "[concat(resourceId('Microsoft.Web/sites', variables('webappName')),'/config/appsettings')]"
+          ],
+          "properties": {
+            "eventHubStorage": {
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',concat(listKeys(variables('storageAccountId'),'2015-05-01-preview').key1))]",
+              "type": "Custom"
+            },
+            "CosmosDBConnection": {
+              "value": "[concat('AccountEndpoint=https://',variables('cosmosDbName'),'.documents.azure.com:443/;AccountKey=',concat(listKeys(variables('cosmosDbId'),'2015-05-01-preview').key1))]",
+              "type": "Custom"
+            }
+          }
+        }
+      ]
+    }
+
+
+
+  ],
+  "outputs": {
+    "storageKey": {
+      "type": "string",
+      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',concat(listKeys(variables('storageAccountId'),'2015-05-01-preview').key1))]"
+    }
+  }
+}

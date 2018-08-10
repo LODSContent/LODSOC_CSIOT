@@ -30,6 +30,7 @@
     </None>
     <Content Include="Deploy-AzureResourceGroup.ps1" />
     <Content Include="README.md" />
+    <Content Include="templateWCosmosDB.json" />
     <Content Include="template.json" />
     <Content Include="template.parameters.json" />
   </ItemGroup>
