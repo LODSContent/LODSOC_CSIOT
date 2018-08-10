@@ -17,7 +17,7 @@
     "webappDeployPackageURI": {
       "type": "string",
       "minLength": 1,
-      "defaultValue": "https://github.com/twallace27603/lods-csiot/blob/master/deploy/DeviceEmulator.zip?raw=true",
+      "defaultValue": "https://github.com/twallace27603/lods-csiot/blob/master/iotWebApp/deploy/iotWebApp.zip?raw=true",
       "metadata": {
         "description": "Name of the webdeploy package"
       }
@@ -318,7 +318,7 @@
               "type": "Custom"
             },
             "CosmosDBConnection": {
-              "value": "[concat('AccountEndpoint=https://',variables('cosmosDbName'),'.documents.azure.com:443/;AccountKey=',concat(listKeys(variables('cosmosDbId'),'2015-05-01-preview').key1))]",
+              "value": "[concat('AccountEndpoint=https://',variables('cosmosDbName'),'.documents.azure.com:443/;AccountKey=',concat(listKeys(variables('cosmosDbId'),'2015-04-08').primaryMasterKey))]",
               "type": "Custom"
             }
           }
