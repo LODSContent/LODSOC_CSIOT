@@ -33,6 +33,7 @@
     <Content Include="templateWCosmosDB.json" />
     <Content Include="template.json" />
     <Content Include="template.parameters.json" />
+    <None Include="Policy.json" />
   </ItemGroup>
   <Target Name="GetReferenceAssemblyPaths" />
 </Project>

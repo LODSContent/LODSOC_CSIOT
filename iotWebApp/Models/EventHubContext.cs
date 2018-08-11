@@ -151,7 +151,7 @@ namespace iotWebApp.Models
         public async Task<EvaluationResult> TestEndpoint()
         {
             
-            return await storage.GetFirstBlob("eventhubep",60);
+            return await storage.GetFirstBlob("iothubep",60);
         }
 
 

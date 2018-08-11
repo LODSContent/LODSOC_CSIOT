@@ -1,0 +1,69 @@
+﻿{
+  "if": {
+    "anyof": [
+      {
+        "not": {
+          "field": "type",
+          "in": [
+            "Microsoft.Storage/storageAccounts",
+            "Microsoft.Storage/storageAccounts/*",
+            "Microsoft.StreamAnalytics/streamingjobs",
+            "Microsoft.StreamAnalytics/streamingjobs/*",
+            "Microsoft.DocumentDB/databaseAccounts    ",
+            "Microsoft.DocumentDB/databaseAccounts/*  ",
+            "Microsoft.DocumentDB/databaseAccounts/databases/collections",
+            "Microsoft.DocumentDB/databaseAccounts/databases/collections/*",
+            "Microsoft.TimeSeriesInsights/environments",
+            "Microsoft.TimeSeriesInsights/environments/*",
+            "Microsoft.TimeSeriesInsights/environments/eventsources",
+            "Microsoft.TimeSeriesInsights/environments/eventsources/*",
+            "Microsoft.TimeSeriesInsights/environments/accesspolicies",
+            "Microsoft.TimeSeriesInsights/environments/accesspolicies/*",
+            "Microsoft.TimeSeriesInsights/environments/referencedatasets",
+            "Microsoft.TimeSeriesInsights/environments/referencedatasets/*",
+            "Microsoft.Devices/iotHubs",
+            "Microsoft.Devices/iotHubs/*",
+            "Microsoft.Devices/iotHubs/eventHubEndpoints/consumerGroups",
+            "Microsoft.Devices/iotHubs/eventHubEndpoints/consumerGroups/*",
+            "Microsoft.Devices/iotHubs/certificates",
+            "Microsoft.Devices/iotHubs/certificates/*",
+            "Microsoft.Devices/iotHubs/eventGridFilters",
+            "Microsoft.Devices/iotHubs/eventGridFilters/*",
+            "Microsoft.EventHub/namespaces",
+            "Microsoft.EventHub/namespaces/*",
+            "Microsoft.EventHub/namespaces/authorizationRules",
+            "Microsoft.EventHub/namespaces/authorizationRules/*",
+            "Microsoft.EventHub/namespaces/eventhubs",
+            "Microsoft.EventHub/namespaces/eventhubs/*",
+            "Microsoft.EventHub/namespaces/eventHubs/consumergroups",
+            "Microsoft.EventHub/namespaces/eventHubs/consumergroups/*",
+            "Microsoft.EventHub/namespaces/eventhubs/authorizationRules",
+            "Microsoft.EventHub/namespaces/eventhubs/authorizationRules/*",
+            "Microsoft.EventHub/namespaces/messagingPlan",
+            "Microsoft.EventHub/namespaces/messagingPlan/*",
+            "Microsoft.EventHub/clusters",
+            "Microsoft.EventHub/clusters/*",
+            "Microsoft.Web/serverfarms",
+            "Microsoft.Web/serverfarms/*",
+            "Microsoft.Web/sites/config",
+            "Microsoft.Web/sites/config/*",
+            "Microsoft.web/sites/deployments",
+            "Microsoft.web/sites/deployments/*",
+            "Microsoft.web/sites/functions",
+            "Microsoft.web/sites/functions/*",
+            "Microsoft.web/sites/triggeredwebjobs",
+            "Microsoft.web/sites/triggeredwebjobs/*",
+            "Microsoft.Web/sites",
+            "Microsoft.Web/sites/*"
+          ]
+        }
+      }
+    ]
+
+  },
+  "then": {
+    "effect": "deny"
+  }
+}
+
+

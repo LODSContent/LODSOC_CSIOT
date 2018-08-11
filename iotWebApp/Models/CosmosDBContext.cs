@@ -47,13 +47,7 @@ namespace iotWebApp.Models
             return result;
         }
 
-        public async Task<EvaluationResult> TestConsumerGroups()
-        {
-            var result = new EvaluationResult { Code = 0, Passed = true, Message = "Passed" };
-
-            return result;
-        }
-
+  
 
 
     }

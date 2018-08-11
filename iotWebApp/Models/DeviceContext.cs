@@ -131,6 +131,7 @@ namespace iotWebApp.Models
                 Thread.Sleep(50);
                 var readings = JsonConvert.SerializeObject(device.GetReading());
                 Message eventMessage = new Message(Encoding.UTF8.GetBytes(readings));
+                eventMessage.ContentType = "application/json";
                 await client.SendEventAsync(eventMessage).ConfigureAwait(false);
             }
 

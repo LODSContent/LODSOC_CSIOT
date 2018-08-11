@@ -9,7 +9,7 @@
         "value": "!1234tsw"
       },
       "testType": {
-        "value": 255
+        "value": 8
       },
       "webappDeployPackageURI": {
         "value": "https://github.com/twallace27603/lods-csiot/blob/master/iotWebApp/deploy/iotWebApp.zip?raw=true"
