@@ -330,9 +330,6 @@
 
   ],
   "outputs": {
-    "storageKey": {
-      "type": "string",
-      "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',concat(listKeys(variables('storageAccountId'),'2015-05-01-preview').key1))]"
-    }
+
   }
 }
