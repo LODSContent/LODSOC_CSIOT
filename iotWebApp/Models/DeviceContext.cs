@@ -24,7 +24,7 @@ namespace iotWebApp.Models
             var result = new EvaluationResult { Code = 0, Message = "Processed telemetry", Passed = true };
             try
             {
-                
+
                 var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);
                 var connectionStrings = await iotReg.GetTwinsConnectionString();
                 if (connectionStrings.Count != 3)
@@ -50,7 +50,7 @@ namespace iotWebApp.Models
             return result;
         }
 
-         public async Task<EvaluationResult> ReceiveCommand(DeviceWebAPIParameters parms)
+        public async Task<EvaluationResult> ReceiveCommand(DeviceWebAPIParameters parms)
         {
             var result = new EvaluationResult { Code = 0, Message = "Received a command", Passed = true };
             var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);
@@ -70,7 +70,7 @@ namespace iotWebApp.Models
             if (receivedMessage != null)
             {
                 result.Message = Encoding.ASCII.GetString(receivedMessage.GetBytes());
-                 await client.CompleteAsync(receivedMessage).ConfigureAwait(false);
+                await client.CompleteAsync(receivedMessage).ConfigureAwait(false);
             }
             else
             {
@@ -104,7 +104,8 @@ namespace iotWebApp.Models
                     try
                     {
                         await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
-                    } catch
+                    }
+                    catch
                     {
                         //Ignore error here.  This is a write operation and it fails if the value already exists.
                     }
@@ -115,7 +116,29 @@ namespace iotWebApp.Models
                     result.Passed = false;
                     result.Code = -1;
                 }
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
+            {
+                result.Passed = false;
+                result.Code = ex.HResult;
+                result.Message = $"Error: {ex.Message}";
+            }
+            return result;
+        }
+
+        public async Task<EvaluationResult> GetDeviceCount(DeviceWebAPIParameters parms)
+        {
+            var result = new EvaluationResult { Code = 0, Message = "Processed telemetry", Passed = true };
+            try
+            {
+
+                var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);
+                var deviceCount = (await iotReg.GetTwinsConnectionString()).Count;
+                result.Passed = deviceCount == 3;
+                result.Message = $"There are {deviceCount} devices registered in IoY Hub";
+                result.Code = deviceCount == 3 ? 0 : -1;
+            }
+            catch (Exception ex)
             {
                 result.Passed = false;
                 result.Code = ex.HResult;
@@ -169,6 +192,6 @@ namespace iotWebApp.Models
 
         #endregion
     }
- 
- 
+
+
 }

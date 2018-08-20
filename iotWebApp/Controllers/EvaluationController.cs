@@ -58,6 +58,17 @@ namespace iotWebApp.Controllers
         }
 
         [HttpPost]
+        [Route("devicecount")]
+        public async Task<EvaluationResult> DeviceCount(DeviceWebAPIParameters parms)
+        {
+            parms.Fix(Config);
+            var context = new DeviceContext();
+            var result = await context.GetDeviceCount(parms);
+            return result;
+        }
+
+
+        [HttpPost]
         [Route("verifyevents")]
         public async Task<EvaluationResult> VerifyEvents(DeviceWebAPIParameters parms)
         {
@@ -117,6 +128,7 @@ namespace iotWebApp.Controllers
             return result;
         }
         [HttpPost]
+
         [Route("cosmosdb")]
         public EvaluationResult CosmosDB(DeviceWebAPIParameters parms)
         {
