@@ -101,7 +101,13 @@ namespace iotWebApp.Models
                     result.Message = prop;
                     TwinCollection reportedProperties = new TwinCollection();
                     reportedProperties["sample"] = result.Message;
-                    await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
+                    try
+                    {
+                        await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
+                    } catch
+                    {
+                        //Ignore error here.  This is a write operation and it fails if the value already exists.
+                    }
                 }
                 else
                 {
