@@ -88,33 +88,53 @@ namespace iotWebApp.Models
             {
                 var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);
                 var connectionStrings = await iotReg.GetTwinsConnectionString();
-
-                var client = DeviceClient.CreateFromConnectionString(connectionStrings[0], s_transportType);
-                if (client == null)
+                var retries = 0;
+                var retry = true;
+                //Added basic retry pattern
+                while ((retry) && (retries < 3))
                 {
-                    throw new ArgumentException("Failed to create a device client");
-                }
-                Twin twin = await client.GetTwinAsync().ConfigureAwait(false);
-                if (twin.Properties.Desired.Contains("sample"))
-                {
-                    dynamic prop = twin.Properties.Desired["sample"];
-                    result.Message = prop;
-                    TwinCollection reportedProperties = new TwinCollection();
-                    reportedProperties["sample"] = result.Message;
                     try
                     {
-                        await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
+                        var client = DeviceClient.CreateFromConnectionString(connectionStrings[0], s_transportType);
+                        if (client == null)
+                        {
+                            throw new ArgumentException("Failed to create a device client");
+                        }
+                        Twin twin = await client.GetTwinAsync().ConfigureAwait(false);
+                        if (twin.Properties.Desired.Contains("sample"))
+                        {
+                            dynamic prop = twin.Properties.Desired["sample"];
+                            result.Message = prop;
+                            TwinCollection reportedProperties = new TwinCollection();
+                            reportedProperties["sample"] = result.Message;
+                            try
+                            {
+                                await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
+                            }
+                            catch
+                            {
+                                //Ignore error here.  This is a write operation and it fails if the value already exists.
+                            }
+                        }
+                        else
+                        {
+                            result.Message = $"The \"sample\" property does not exist for the {twin.DeviceId} device.";
+                            result.Passed = false;
+                            result.Code = -1;
+                        }
+                        retry = false;
                     }
-                    catch
+                    catch(Exception inner)
                     {
-                        //Ignore error here.  This is a write operation and it fails if the value already exists.
+                        retries++;
+                        if (retries < 3) { Thread.Sleep(1000); } else
+                        {
+                            result.Passed = false;
+                            result.Code = inner.HResult;
+                            result.Message = $"Error: {inner.Message}";
+
+                        }
                     }
-                }
-                else
-                {
-                    result.Message = $"The \"sample\" property does not exist for the {twin.DeviceId} device.";
-                    result.Passed = false;
-                    result.Code = -1;
                 }
             }
             catch (Exception ex)
@@ -129,20 +149,33 @@ namespace iotWebApp.Models
         public async Task<EvaluationResult> GetDeviceCount(DeviceWebAPIParameters parms)
         {
             var result = new EvaluationResult { Code = 0, Message = "Processed telemetry", Passed = true };
-            try
+            var retry = true;
+            var retries = 3;
+            while (retry && (retries < 3))
             {
+                try
+                {
 
-                var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);
-                var deviceCount = (await iotReg.GetTwinsConnectionString()).Count;
-                result.Passed = deviceCount == 3;
-                result.Message = $"There are {deviceCount} devices registered in IoY Hub";
-                result.Code = deviceCount == 3 ? 0 : -1;
-            }
-            catch (Exception ex)
-            {
-                result.Passed = false;
-                result.Code = ex.HResult;
-                result.Message = $"Error: {ex.Message}";
+                    var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);
+                    var deviceCount = (await iotReg.GetTwinsConnectionString()).Count;
+                    result.Passed = deviceCount == 3;
+                    result.Message = $"There are {deviceCount} devices registered in IoY Hub";
+                    result.Code = deviceCount == 3 ? 0 : -1;
+                    retry = false;
+                }
+                catch (Exception ex)
+                {
+                    retries++;
+                    if (retries == 3)
+                    {
+                        result.Passed = false;
+                        result.Code = ex.HResult;
+                        result.Message = $"Error: {ex.Message}";
+                    } else
+                    {
+                        Thread.Sleep(1000);
+                    }
+                }
             }
             return result;
         }
