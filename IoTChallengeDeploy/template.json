@@ -34,7 +34,7 @@
     "storageAccountId": "[concat(resourceGroup().id,'/providers/Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
     "cosmosDbId": "[concat(resourceGroup().id,'/providers/Microsoft.DocumentDB/databaseAccounts/', variables('cosmosDbName'))]",
     "advanced": "[bool(or(or(equals(parameters('testType'),'3'),equals(parameters('testType'),'12')), or(equals(parameters('testType'),'48'),equals(parameters('testType'),'63'))))]",
-    "deployIoTHub": "[bool(greater(parameters('testType'),3))]",
+    "deployIoTHub": "[bool(and(greater(parameters('testType'),3),less(parameters('testType'),3)))]",
     "deployCosmosDB": "[bool(or(equals(parameters('testType'),16),greater(parameters('testType'),32)))]",
     "deployDataLake": "[bool(or(equals(parameters('testType'),16),greater(parameters('testType'),32)))]"
 
@@ -319,7 +319,7 @@
               "type": "Custom"
             },
             "CosmosDBConnection": {
-              "value": "[if(bool(variables('deployCosmosDB')),concat('AccountEndpoint=https://',variables('cosmosDbName'),'.documents.azure.com:443;AccountKey=',concat(listKeys(variables('cosmosDbId'),'2015-05-01-preview').key1)),'NoValue')]",
+              "value": "[if(bool(variables('deployCosmosDB')),concat('AccountEndpoint=https://',variables('cosmosDbName'),'.documents.azure.com:443/;AccountKey=',concat(listKeys(variables('cosmosDbId'),'2015-04-08').primaryMasterKey)),'NoValue')]",
               "type": "Custom"
             }
           }
