@@ -197,7 +197,7 @@
     {
       "type": "Microsoft.Storage/storageAccounts",
       "sku": {
-        "name": "Standard_RAGRS",
+        "name": "Standard_LRS",
         "tier": "Standard"
       },
       "kind": "Storage",
