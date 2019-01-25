@@ -34,7 +34,7 @@
     "storageAccountId": "[concat(resourceGroup().id,'/providers/Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
     "cosmosDbId": "[concat(resourceGroup().id,'/providers/Microsoft.DocumentDB/databaseAccounts/', variables('cosmosDbName'))]",
     "advanced": "[bool(or(or(equals(parameters('testType'),'3'),equals(parameters('testType'),'12')), or(equals(parameters('testType'),'48'),equals(parameters('testType'),'63'))))]",
-    "deployIoTHub": "[bool(and(greater(parameters('testType'),3),less(parameters('testType'),3)))]",
+    "deployIoTHub": "[bool(or(greater(parameters('testType'),3),less(parameters('testType'),3)))]",
     "deployCosmosDB": "[bool(or(equals(parameters('testType'),16),greater(parameters('testType'),32)))]",
     "deployDataLake": "[bool(or(equals(parameters('testType'),16),greater(parameters('testType'),32)))]"
 
@@ -331,5 +331,17 @@
 
   ],
   "outputs": {
+    "DeployIoT": {
+      "type": "bool",
+      "value": "[variables('deployIoTHub')]"
+    },
+    "DeployCosmosDB": {
+      "type": "bool",
+      "value": "[variables('deployCosmosDB')]"
+    },
+    "DeployDataLake": {
+      "type": "bool",
+      "value": "[variables('deployDataLake')]"
+    }
   }
 }
