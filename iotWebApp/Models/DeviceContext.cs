@@ -53,30 +53,40 @@ namespace iotWebApp.Models
         public async Task<EvaluationResult> ReceiveCommand(DeviceWebAPIParameters parms)
         {
             var result = new EvaluationResult { Code = 0, Message = "Received a command", Passed = true };
-            var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);
-            var connectionStrings = await iotReg.GetTwinsConnectionString();
-
-            var client = DeviceClient.CreateFromConnectionString(connectionStrings[0], s_transportType);
-            if (client == null)
+            //Added Try-Catch to prevent instantation errors from breaking webpage. 2021/05/11 - Anders Grasdal
+            try
             {
-                throw new ArgumentException("Failed to create a device client");
+                var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);
+                var connectionStrings = await iotReg.GetTwinsConnectionString();
+
+                var client = DeviceClient.CreateFromConnectionString(connectionStrings[0], s_transportType);
+                if (client == null)
+                {
+                    throw new ArgumentException("Failed to create a device client");
+                }
+
+                Message receivedMessage;
+
+
+                receivedMessage = await client.ReceiveAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+
+                if (receivedMessage != null)
+                {
+                    result.Message = Encoding.ASCII.GetString(receivedMessage.GetBytes());
+                    await client.CompleteAsync(receivedMessage).ConfigureAwait(false);
+                }
+                else
+                {
+                    result.Message = "Device message receive timed out.  You must add a message within 30 seconds.";
+                    result.Passed = false;
+                    result.Code = -1;
+                }
             }
-
-            Message receivedMessage;
-
-
-            receivedMessage = await client.ReceiveAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
-
-            if (receivedMessage != null)
+            catch (Exception ex)
             {
-                result.Message = Encoding.ASCII.GetString(receivedMessage.GetBytes());
-                await client.CompleteAsync(receivedMessage).ConfigureAwait(false);
-            }
-            else
-            {
-                result.Message = "Device message receive timed out.  You must add a message within 30 seconds.";
                 result.Passed = false;
-                result.Code = -1;
+                result.Code = ex.HResult;
+                result.Message = $"Error: {ex.Message}";
             }
             return result;
         }
@@ -95,7 +105,8 @@ namespace iotWebApp.Models
                 {
                     try
                     {
-                        var client = DeviceClient.CreateFromConnectionString(connectionStrings[0], s_transportType);
+                        var client = DeviceClient.CreateFromConnectionString(connectionStrings[0], "Building001", s_transportType);
+                        //Updated to specify the sought IoT device: Building001. To match behaviour of lab and instructions. 2021/05/11 - Anders Grasdal
                         if (client == null)
                         {
                             throw new ArgumentException("Failed to create a device client");
