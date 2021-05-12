@@ -93,45 +93,61 @@ namespace iotWebApp.Models
 
         public async Task<EvaluationResult> DeviceTwin(DeviceWebAPIParameters parms)
         {
-            var result = new EvaluationResult { Code = 0, Message = "Received a command", Passed = true };
+            // Update, default pass/fail state is now false, will only become true after complete success. 2021/05/12 - Anders Grasdal
+            var result = new EvaluationResult { Code = 0, Message = "Received a command", Passed = false };
             try
             {
-                var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);
+                var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);              
                 var connectionStrings = await iotReg.GetTwinsConnectionString();
                 var retries = 0;
                 var retry = true;
+                var found = false;
                 //Added basic retry pattern
                 while ((retry) && (retries < 3))
                 {
                     try
-                    {
-                        var client = DeviceClient.CreateFromConnectionString(connectionStrings[0], "Building001", s_transportType);
-                        //Updated to specify the sought IoT device: Building001. To match behaviour of lab and instructions. 2021/05/11 - Anders Grasdal
-                        if (client == null)
+                    {   
+                        //Iterate over each device twin connection string until the one for Building001 is found, then perform tests against that.
+                        foreach (var connectionString in connectionStrings)
                         {
-                            throw new ArgumentException("Failed to create a device client");
-                        }
-                        Twin twin = await client.GetTwinAsync().ConfigureAwait(false);
-                        if (twin.Properties.Desired.Contains("sample"))
-                        {
-                            dynamic prop = twin.Properties.Desired["sample"];
-                            result.Message = prop;
-                            TwinCollection reportedProperties = new TwinCollection();
-                            reportedProperties["sample"] = result.Message;
-                            try
-                            {
-                                await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
+                            if (connectionString.Contains("DeviceId=Building001")) {
+                                found = true;
+                                var client = DeviceClient.CreateFromConnectionString(connectionString, s_transportType);
+                                if (client == null)
+                                {
+                                    throw new ArgumentException("Failed to create a device client");
+                                }
+                                Twin twin = await client.GetTwinAsync().ConfigureAwait(false);
+                                if (twin.Properties.Desired.Contains("sample"))
+                                {
+                                    dynamic prop = twin.Properties.Desired["sample"];
+                                    result.Message = $"The \"sample\" property of Building001 is: \"{prop}\"";
+                                    TwinCollection reportedProperties = new TwinCollection();
+                                    reportedProperties["sample"] = prop;
+                                    try
+                                    {
+                                        await client.UpdateReportedPropertiesAsync(reportedProperties).ConfigureAwait(false);
+                                    }
+                                    catch
+                                    {
+                                        //Ignore error here.  This is a write operation and it fails if the value already exists.
+                                    }
+                                    result.Passed = true;
+                                }
+                                else
+                                {
+                                    result.Message = $"The \"sample\" property does not exist for the Building001 device.";
+                                    //result.Passed = false;
+                                    result.Code = -1;
+                                }
+                                break;
                             }
-                            catch
-                            {
-                                //Ignore error here.  This is a write operation and it fails if the value already exists.
-                            }
                         }
-                        else
+
+
+                        if (!found)
                         {
-                            result.Message = $"The \"sample\" property does not exist for the {twin.DeviceId} device.";
-                            result.Passed = false;
-                            result.Code = -1;
+                            result.Message = "The \"Building001\" device does not exist.";
                         }
                         retry = false;
                     }
@@ -140,7 +156,7 @@ namespace iotWebApp.Models
                         retries++;
                         if (retries < 3) { Thread.Sleep(1000); } else
                         {
-                            result.Passed = false;
+                            //result.Passed = false;
                             result.Code = inner.HResult;
                             result.Message = $"Error: {inner.Message}";
 
@@ -150,7 +166,7 @@ namespace iotWebApp.Models
             }
             catch (Exception ex)
             {
-                result.Passed = false;
+                //result.Passed = false;
                 result.Code = ex.HResult;
                 result.Message = $"Error: {ex.Message}";
             }
