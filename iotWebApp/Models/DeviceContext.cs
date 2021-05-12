@@ -52,39 +52,73 @@ namespace iotWebApp.Models
 
         public async Task<EvaluationResult> ReceiveCommand(DeviceWebAPIParameters parms)
         {
-            var result = new EvaluationResult { Code = 0, Message = "Received a command", Passed = true };
+            var result = new EvaluationResult { Code = 0, Message = "Received a command", Passed = false };
             //Added Try-Catch to prevent instantation errors from breaking webpage. 2021/05/11 - Anders Grasdal
+            //Updated Method to include a serviceClient which sends the test message.
+            //Updated evaluation response to be falsey by default and true only after success.
             try
-            {
+            {                
+                var serviceClient = IotD.ServiceClient.CreateFromConnectionString(parms.IotConnection);                              
+                if (serviceClient == null)
+                {
+                    throw new ArgumentException("Failed to create a service client ");
+                }
+
+                string messageContent = "This is a test message from the cloud to Building001";
+                IotD.Message sentMessage = new IotD.Message(Encoding.ASCII.GetBytes(messageContent));
+                try
+                {
+                    await serviceClient.SendAsync("Building001", sentMessage);
+                }
+                catch
+                {
+                    throw new ArgumentException("Failed to send message to Building001, device does not exist.");
+                }
+
+
+
                 var iotReg = new IotUtilities.IotRegistry(parms.IotConnection);
                 var connectionStrings = await iotReg.GetTwinsConnectionString();
+                var found = false;
 
-                var client = DeviceClient.CreateFromConnectionString(connectionStrings[0], s_transportType);
-                if (client == null)
+                foreach (var deviceConnectionString in connectionStrings)
                 {
-                    throw new ArgumentException("Failed to create a device client");
+                    if (deviceConnectionString.Contains("DeviceId=Building001"))
+                    {
+                        found = true;
+                        var client = DeviceClient.CreateFromConnectionString(deviceConnectionString, s_transportType);
+                        if (client == null)
+                        {
+                            throw new ArgumentException("Failed to create a device client");
+                        }
+
+                        Message receivedMessage;
+                        receivedMessage = await client.ReceiveAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+
+                        if (receivedMessage != null)
+                        {
+                            result.Message = Encoding.ASCII.GetString(receivedMessage.GetBytes());
+                            await client.CompleteAsync(receivedMessage).ConfigureAwait(false);
+                            result.Passed = true;
+                        }
+                        else
+                        {
+                            result.Message = "Device message receive timed out.  You must add a message within 30 seconds.";
+                            //result.Passed = false;
+                            result.Code = -1;
+                        }
+                        break;
+                    }
                 }
-
-                Message receivedMessage;
-
-
-                receivedMessage = await client.ReceiveAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
-
-                if (receivedMessage != null)
+                if (!found)
                 {
-                    result.Message = Encoding.ASCII.GetString(receivedMessage.GetBytes());
-                    await client.CompleteAsync(receivedMessage).ConfigureAwait(false);
-                }
-                else
-                {
-                    result.Message = "Device message receive timed out.  You must add a message within 30 seconds.";
-                    result.Passed = false;
+                    result.Message = "The \"Building001\" device does not exist.";
                     result.Code = -1;
                 }
             }
             catch (Exception ex)
             {
-                result.Passed = false;
+                //result.Passed = false;
                 result.Code = ex.HResult;
                 result.Message = $"Error: {ex.Message}";
             }
@@ -106,13 +140,15 @@ namespace iotWebApp.Models
                 while ((retry) && (retries < 3))
                 {
                     try
-                    {   
+                    {
                         //Iterate over each device twin connection string until the one for Building001 is found, then perform tests against that.
-                        foreach (var connectionString in connectionStrings)
+                        //2021/05/12 - Anders Grasdal
+                        foreach (var deviceConnectionString in connectionStrings)
                         {
-                            if (connectionString.Contains("DeviceId=Building001")) {
+                            if (deviceConnectionString.Contains("DeviceId=Building001")) 
+                            {
                                 found = true;
-                                var client = DeviceClient.CreateFromConnectionString(connectionString, s_transportType);
+                                var client = DeviceClient.CreateFromConnectionString(deviceConnectionString, s_transportType);
                                 if (client == null)
                                 {
                                     throw new ArgumentException("Failed to create a device client");
@@ -148,6 +184,7 @@ namespace iotWebApp.Models
                         if (!found)
                         {
                             result.Message = "The \"Building001\" device does not exist.";
+                            result.Code = -1;
                         }
                         retry = false;
                     }
