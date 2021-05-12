@@ -29,7 +29,7 @@ namespace iotWebApp.Models
                 var connectionStrings = await iotReg.GetTwinsConnectionString();
                 if (connectionStrings.Count != 3)
                 {
-                    throw new IndexOutOfRangeException("Incorrect number of connection strings.  There should be three.");
+                    throw new IndexOutOfRangeException("Incorrect number of device connection strings. There should be three.");
                 }
                 List<Task> tasks = new List<Task>();
                 var devices = generateDevices(connectionStrings, parms.Interval);
@@ -57,7 +57,8 @@ namespace iotWebApp.Models
             //Updated Method to include a serviceClient which sends the test message.
             //Updated evaluation response to be falsey by default and true only after success.
             try
-            {                
+            {   
+                /**
                 var serviceClient = IotD.ServiceClient.CreateFromConnectionString(parms.IotConnection);                              
                 if (serviceClient == null)
                 {
@@ -74,6 +75,7 @@ namespace iotWebApp.Models
                 {
                     throw new ArgumentException("Failed to send message to Building001, device does not exist.");
                 }
+                **/
 
 
 
@@ -103,7 +105,7 @@ namespace iotWebApp.Models
                         }
                         else
                         {
-                            result.Message = "Device message receive timed out.  You must add a message within 30 seconds.";
+                            result.Message = "Device message receive timed out.  You must add a message to Building001 within 30 seconds.";
                             //result.Passed = false;
                             result.Code = -1;
                         }
