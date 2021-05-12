@@ -22,7 +22,7 @@
     }
 
     function messageDevice() {
-        showStart("Sending message to device Building001");
+        showStart("Receiving message as device Building001");
         runTest("messagetodevice", getPayload(0, 0), "Verify Message to Device", null, showResult, false, false);
     }
 
